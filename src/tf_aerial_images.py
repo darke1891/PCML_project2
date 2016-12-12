@@ -31,6 +31,7 @@ RESTORE_MODEL = False # If True, restore existing model instead of training a ne
 RECORDING_STEP = 1000
 TRAIN_PREFIX = 'training/images/satImage_'
 TEST_PREFIX = 'test_set_images/test_'
+TEST_SIZE = 50
 TRAIN_LABEL_PREFIX = 'training/groundtruth/satImage_'
 TRAIN_MODE = True
 
