@@ -87,3 +87,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+src/training/
+src/predictions_training/
+src/test_set_images
