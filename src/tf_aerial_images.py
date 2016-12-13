@@ -21,9 +21,9 @@ from PIL import Image
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
 from config import *
-from basic_read import read_images, img_crop, extract_labels
+from basic_read import read_images
 from train_read import extract_train
-from test_read import extract_test_labels
+from test_read import extract_test_labels, extract_test_data
 from test_write import save_image
 
 tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist',
@@ -327,7 +327,7 @@ def main(args=None):  # pylint: disable=unused-argument
 
                         # print_predictions(predictions, batch_labels)
 
-                        print ('Epoch %.2f' % (float(step) * BATCH_SIZE / train_size))
+                        print ('Epoch {:2f}, {}/{}' .format(float(step) * BATCH_SIZE / train_size, iepoch, num_epochs))
                         print ('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
                         print ('Minibatch error: %.1f%%' % error_rate(predictions,
                                                                      batch_labels))
@@ -346,25 +346,28 @@ def main(args=None):  # pylint: disable=unused-argument
         if TRAIN_MODE:
             print("Running prediction on training set")
             prediction_dir = "predictions_training/"
-            images = read_images(TRAIN_PREFIX, TRAINING_SIZE, True)
+            index_start = TRAIN_START
+            images = extract_test_data(TRAIN_PREFIX, index_start, TRAIN_SIZE, True)
         else:
             print('Running prediction on test dataset')
             prediction_dir = 'predictions_test/'
-            images = read_images(TEST_PREFIX, TEST_SIZE, False)
+            index_start = TEST_START
+            images = extract_test_data(TEST_PREFIX, index_start, TEST_SIZE, False)
         
         if not os.path.isdir(prediction_dir):
             os.mkdir(prediction_dir)
 
         output_predictions = np.zeros((0, NUM_LABELS))
-        for index, img in enumerate(images):
-            img_patches = np.asarray(img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE))
+        for index, image_data in enumerate(images):
+            img = image_data[0]
+            img_patches = image_data[1]
             # predicting
             data_node = tf.constant(img_patches)
             output = tf.nn.softmax(model(data_node, False, **all_params))
             output_prediction = s.run(output)
             output_predictions = np.concatenate((output_predictions, output_prediction))
 
-            save_image(img, output_prediction, prediction_dir, index)
+            save_image(img, output_prediction, prediction_dir, index + index_start)
         
         if TRAIN_MODE:
             labels = extract_test_labels()

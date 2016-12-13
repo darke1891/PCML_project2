@@ -30,10 +30,14 @@ def img_crop(im, w, h):
     return list_patches
 
 
-def read_images(file_prefix, num_images, is_train):
+def img_to_patches(img):
+    list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE)
+    return list_patches
+
+def read_images(file_prefix, start_images, num_images, is_train):
     imgs = []
     filename_format = '{}{:03d}.png' if is_train else '{}{}.png'
-    for i in range(1, num_images + 1):
+    for i in range(start_images, start_images + num_images):
         filename = filename_format.format(file_prefix, i)
         if os.path.isfile(filename):
             print('Loading {}'.format(filename))
@@ -46,22 +50,22 @@ def read_images(file_prefix, num_images, is_train):
     return imgs
 
 
-def extract_patches(file_prefix, num_images, is_train):
+def extract_patches(file_prefix, start_images, num_images, is_train):
     """Extract the images into a 4D tensor [image index, y, x, channels].
     Values are rescaled from [0, 255] down to [-0.5, 0.5].
     """
-    imgs = read_images(file_prefix, num_images, is_train)
+    imgs = read_images(file_prefix, start_images, num_images, is_train)
 
-    img_patches = [img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE) for img in imgs]
+    img_patches = [img_to_patches(img) for img in imgs]
     data = [patch for patches in img_patches for patch in patches]
 
     return np.asarray(data)
 
 
 # Extract label images
-def extract_labels(file_prefix, num_images, is_train):
+def extract_labels(file_prefix, start_images, num_images, is_train):
     """Extract the labels into a 1-hot matrix [image index, label index]."""
-    gt_imgs = read_images(file_prefix, num_images, is_train)
+    gt_imgs = read_images(file_prefix, start_images, num_images, is_train)
 
     gt_patches = [img_crop(gt_img, IMG_PATCH_SIZE, IMG_PATCH_SIZE) for gt_img in gt_imgs]
     data = np.asarray([gt_patch for patches in gt_patches for gt_patch in patches])

@@ -75,11 +75,11 @@ def save_image(img, output_prediction, prediction_dir, index):
     img = hsv_to_rgb(img)
     cimg = concatenate_images(img, img_prediction)
     Image.fromarray(cimg).save('{}prediction_{}.png'.format(
-        prediction_dir, index + 1  # image number starts with 1
+        prediction_dir, index
     ))
 
     # overlay original image with prediction
     oimg = make_img_overlay(img, img_prediction)
     oimg.save('{}overlay_{}.png'.format(
-        prediction_dir, index + 1
+        prediction_dir, index
     ))
