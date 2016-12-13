@@ -12,28 +12,29 @@ import sys
 import urllib
 import csv
 import matplotlib.image as mpimg
-from PIL import Image
-
 import code
 import tensorflow.python.platform
 import numpy as np
 import tensorflow as tf
 
+from PIL import Image
+from matplotlib.colors import rgb_to_hsv
+
 NUM_CHANNELS = 3 # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 2
-TRAINING_SIZE = 20
+TRAINING_SIZE = 100
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16 # 64
 NUM_EPOCHS = 5
-RESTORE_MODEL = False # If True, restore existing model instead of training a new one
 RECORDING_STEP = 1000
-TRAIN_PREFIX = 'training/images/satImage_'
-TEST_PREFIX = 'test_set_images/test_'
+TRAIN_PREFIX = 'data/training/images/satImage_'
+TEST_PREFIX = 'data/test_set_images/test_'
 TEST_SIZE = 50
-TRAIN_LABEL_PREFIX = 'training/groundtruth/satImage_'
-TRAIN_MODE = True
+TRAIN_LABEL_PREFIX = 'data/training/groundtruth/satImage_'
+TRAIN_MODE = False
+RESTORE_MODEL = True # If True, restore existing model instead of training a new one
 
 # Set image patch size in pixels
 # IMG_PATCH_SIZE should be a multiple of 4
@@ -70,6 +71,8 @@ def read_images(file_prefix, num_images, is_train):
         if os.path.isfile(filename):
             print('Loading {}'.format(filename))
             img = mpimg.imread(filename)
+            if 'groundtruth' not in file_prefix:
+                img = rgb_to_hsv(img)
             imgs.append(img)
         else:
             print('File {} does not exist'.format(filename))
@@ -319,6 +322,7 @@ def main(args=None):  # pylint: disable=unused-argument
             c1 += 1
     print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
 
+
     # This is where training samples and labels are fed to the graph.
     # These placeholder nodes will be fed a batch of training data at each
     # training step using the {feed_dict} argument to the Run() call below.
@@ -492,21 +496,25 @@ def main(args=None):  # pylint: disable=unused-argument
             data_node = tf.constant(img_patches)
             output = tf.nn.softmax(model(data_node, False, **all_params))
             output_prediction = s.run(output)
+
+            # concatenate original image with prediction
             img_prediction = label_to_img(
                 img.shape[0], img.shape[1], IMG_PATCH_SIZE, IMG_PATCH_SIZE,
                 output_prediction)
-
-            # concatenate original image with prediction
             cimg = concatenate_images(img, img_prediction)
             Image.fromarray(cimg).save('{}prediction_{}.png'.format(
-                prediction_dir, index
+                prediction_dir, index + 1  # image number starts with 1
             ))
 
             # overlay original image with prediction
             oimg = make_img_overlay(img, img_prediction)
             oimg.save('{}overlay_{}.png'.format(
-                prediction_dir, index
+                prediction_dir, index + 1
             ))
+        
+        if TRAIN_MODE:
+            labels = extract_labels(TRAIN_LABEL_PREFIX, TRAINING_SIZE, True)
+            print('Error rate: {}'.format(error_rate(output_prediction, labels)))
 
 
 if __name__ == '__main__':
