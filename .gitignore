@@ -1,6 +1,9 @@
 # add data directory for our project
 data/
 
+src/predictions_training
+src/predictions_test
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -91,6 +94,3 @@ ENV/
 # Rope project settings
 .ropeproject
 
-src/training/
-src/predictions_training/
-src/test_set_images

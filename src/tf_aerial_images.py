@@ -18,100 +18,18 @@ import numpy as np
 import tensorflow as tf
 
 from PIL import Image
-from matplotlib.colors import rgb_to_hsv
+from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
-NUM_CHANNELS = 3 # RGB images
-PIXEL_DEPTH = 255
-NUM_LABELS = 2
-TRAINING_SIZE = 100
-VALIDATION_SIZE = 5  # Size of the validation set.
-SEED = 66478  # Set to None for random seed.
-BATCH_SIZE = 16 # 64
-NUM_EPOCHS = 5
-RECORDING_STEP = 1000
-TRAIN_PREFIX = 'data/training/images/satImage_'
-TEST_PREFIX = 'data/test_set_images/test_'
-TEST_SIZE = 50
-TRAIN_LABEL_PREFIX = 'data/training/groundtruth/satImage_'
-TRAIN_MODE = False
-RESTORE_MODEL = True # If True, restore existing model instead of training a new one
-
-# Set image patch size in pixels
-# IMG_PATCH_SIZE should be a multiple of 4
-# image size should be an integer multiple of this number!
-IMG_PATCH_SIZE = 16
+from config import *
+from basic_read import read_images, img_crop, extract_labels
+from train_read import extract_train
+from test_read import extract_test_labels
+from test_write import save_image
 
 tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist',
                            """Directory where to write event logs """
                            """and checkpoint.""")
 FLAGS = tf.app.flags.FLAGS
-
-
-# Extract patches from a given image
-def img_crop(im, w, h):
-    list_patches = []
-    imgwidth = im.shape[0]
-    imgheight = im.shape[1]
-    is_2d = len(im.shape) < 3
-    for i in range(0,imgheight,h):
-        for j in range(0,imgwidth,w):
-            if is_2d:
-                im_patch = im[j:j+w, i:i+h]
-            else:
-                im_patch = im[j:j+w, i:i+h, :]
-            list_patches.append(im_patch)
-    return list_patches
-
-
-def read_images(file_prefix, num_images, is_train):
-    imgs = []
-    filename_format = '{}{:03d}.png' if is_train else '{}{}.png'
-    for i in range(1, num_images + 1):
-        filename = filename_format.format(file_prefix, i)
-        if os.path.isfile(filename):
-            print('Loading {}'.format(filename))
-            img = mpimg.imread(filename)
-            if 'groundtruth' not in file_prefix:
-                img = rgb_to_hsv(img)
-            imgs.append(img)
-        else:
-            print('File {} does not exist'.format(filename))
-    return imgs
-
-
-def extract_patches(file_prefix, num_images, is_train):
-    """Extract the images into a 4D tensor [image index, y, x, channels].
-    Values are rescaled from [0, 255] down to [-0.5, 0.5].
-    """
-    imgs = read_images(file_prefix, num_images, is_train)
-
-    img_patches = [img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE) for img in imgs]
-    data = [patch for patches in img_patches for patch in patches]
-
-    return np.asarray(data)
-
-
-# Extract label images
-def extract_labels(file_prefix, num_images, is_train):
-    """Extract the labels into a 1-hot matrix [image index, label index]."""
-    gt_imgs = read_images(file_prefix, num_images, is_train)
-
-    gt_patches = [img_crop(gt_img, IMG_PATCH_SIZE, IMG_PATCH_SIZE) for gt_img in gt_imgs]
-    data = np.asarray([gt_patch for patches in gt_patches for gt_patch in patches])
-    labels = np.asarray([value_to_class(np.mean(d)) for d in data])
-
-    # Convert to dense 1-hot representation.
-    return labels.astype(np.float32)
-
-
-# Assign a label to a patch v
-def value_to_class(v):
-    foreground_threshold = 0.25 # percentage of pixels > 1 required to assign a foreground label to a patch
-    df = np.sum(v)
-    if df > foreground_threshold:
-        return [0, 1]
-    else:
-        return [1, 0]
 
 
 def error_rate(predictions, labels):
@@ -137,57 +55,6 @@ def print_predictions(predictions, labels):
     max_labels = np.argmax(labels, 1)
     max_predictions = np.argmax(predictions, 1)
     print (str(max_labels) + ' ' + str(max_predictions))
-
-
-# Convert array of labels to an image
-def label_to_img(imgwidth, imgheight, w, h, labels):
-    array_labels = np.zeros([imgwidth, imgheight])
-    idx = 0
-    for i in range(0,imgheight,h):
-        for j in range(0,imgwidth,w):
-            if labels[idx][0] > 0.5:
-                l = 1
-            else:
-                l = 0
-            array_labels[j:j+w, i:i+h] = l
-            idx = idx + 1
-    return array_labels
-
-
-def img_float_to_uint8(img):
-    rimg = img - np.min(img)
-    rimg = (rimg / np.max(rimg) * PIXEL_DEPTH).round().astype(np.uint8)
-    return rimg
-
-
-def concatenate_images(img, gt_img):
-    n_channels = len(gt_img.shape)
-    w = gt_img.shape[0]
-    h = gt_img.shape[1]
-    if n_channels == 3:
-        cimg = np.concatenate((img, gt_img), axis=1)
-    else:
-        gt_img_3c = np.zeros((w, h, 3), dtype=np.uint8)
-        gt_img8 = img_float_to_uint8(gt_img)          
-        gt_img_3c[:,:,0] = gt_img8
-        gt_img_3c[:,:,1] = gt_img8
-        gt_img_3c[:,:,2] = gt_img8
-        img8 = img_float_to_uint8(img)
-        cimg = np.concatenate((img8, gt_img_3c), axis=1)
-    return cimg
-
-
-def make_img_overlay(img, predicted_img):
-    w = img.shape[0]
-    h = img.shape[1]
-    color_mask = np.zeros((w, h, 3), dtype=np.uint8)
-    color_mask[:,:,0] = predicted_img*PIXEL_DEPTH
-
-    img8 = img_float_to_uint8(img)
-    background = Image.fromarray(img8, 'RGB').convert("RGBA")
-    overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
-    new_img = Image.blend(background, overlay, 0.2)
-    return new_img
 
 
 # Make an image summary for 4d tensor image with index idx
@@ -287,8 +154,7 @@ def model(data, train, **kwargs):
 def main(args=None):  # pylint: disable=unused-argument
 
     # Extract it into np arrays.
-    train_data = extract_patches(TRAIN_PREFIX, TRAINING_SIZE, True)
-    train_labels = extract_labels(TRAIN_LABEL_PREFIX, TRAINING_SIZE, True)
+    train_data, train_labels = extract_train()
 
     num_epochs = NUM_EPOCHS
 
@@ -307,7 +173,6 @@ def main(args=None):  # pylint: disable=unused-argument
     idx1 = [i for i, j in enumerate(train_labels) if j[1] == 1]
     new_indices = idx0[0:min_c] + idx1[0:min_c]
     print (len(new_indices))
-    print (train_data.shape)
     train_data = train_data[new_indices, :, :, :]
     train_labels = train_labels[new_indices]
 
@@ -490,31 +355,20 @@ def main(args=None):  # pylint: disable=unused-argument
         if not os.path.isdir(prediction_dir):
             os.mkdir(prediction_dir)
 
+        output_predictions = np.zeros((0, NUM_LABELS))
         for index, img in enumerate(images):
             img_patches = np.asarray(img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE))
             # predicting
             data_node = tf.constant(img_patches)
             output = tf.nn.softmax(model(data_node, False, **all_params))
             output_prediction = s.run(output)
+            output_predictions = np.concatenate((output_predictions, output_prediction))
 
-            # concatenate original image with prediction
-            img_prediction = label_to_img(
-                img.shape[0], img.shape[1], IMG_PATCH_SIZE, IMG_PATCH_SIZE,
-                output_prediction)
-            cimg = concatenate_images(img, img_prediction)
-            Image.fromarray(cimg).save('{}prediction_{}.png'.format(
-                prediction_dir, index + 1  # image number starts with 1
-            ))
-
-            # overlay original image with prediction
-            oimg = make_img_overlay(img, img_prediction)
-            oimg.save('{}overlay_{}.png'.format(
-                prediction_dir, index + 1
-            ))
+            save_image(img, output_prediction, prediction_dir, index)
         
         if TRAIN_MODE:
-            labels = extract_labels(TRAIN_LABEL_PREFIX, TRAINING_SIZE, True)
-            print('Error rate: {}'.format(error_rate(output_prediction, labels)))
+            labels = extract_test_labels()
+            print('Error rate: {}'.format(error_rate(output_predictions, labels)))
 
 
 if __name__ == '__main__':
