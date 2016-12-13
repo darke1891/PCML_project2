@@ -1,8 +1,8 @@
 # add data directory for our project
 data/
 
-src/predictions_training
-src/predictions_test
+predictions_training/
+predictions_test/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

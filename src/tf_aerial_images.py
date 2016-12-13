@@ -6,19 +6,14 @@ Credits: Aurelien Lucchi, ETH Zürich
 """
 
 
-import gzip
 import os
 import sys
-import urllib
 import csv
 import matplotlib.image as mpimg
-import code
-import tensorflow.python.platform
 import numpy as np
 import tensorflow as tf
 
 from PIL import Image
-from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
 from config import *
 from basic_read import read_images
@@ -364,10 +359,10 @@ def main(args=None):  # pylint: disable=unused-argument
             # predicting
             data_node = tf.constant(img_patches)
             output = tf.nn.softmax(model(data_node, False, **all_params))
-            output_prediction = s.run(output)
-            output_predictions = np.concatenate((output_predictions, output_prediction))
+            prediction = s.run(output)
+            output_predictions = np.concatenate((output_predictions, prediction))
 
-            save_image(img, output_prediction, prediction_dir, index + index_start)
+            save_image(img, prediction, prediction_dir, index + index_start)
         
         if TRAIN_MODE:
             labels = extract_test_labels()
