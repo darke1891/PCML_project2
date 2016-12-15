@@ -193,7 +193,8 @@ def main(args=None):  # pylint: disable=unused-argument
     train_labels_node = tf.placeholder(
             tf.float32,
             shape=(BATCH_SIZE, NUM_LABELS))
-    train_all_data_node = tf.constant(train_data)
+    train_all_data_place = tf.placeholder(tf.float32, shape=train_data.shape)
+    train_all_data_node = tf.Variable(train_all_data_place)
 
     # The variables below hold all the trainable weights. They are passed an
     # initial value which will be assigned when when we call:
@@ -281,7 +282,7 @@ def main(args=None):  # pylint: disable=unused-argument
 
         else:
             # Run all the initializers to prepare the trainable parameters.
-            tf.initialize_all_variables().run()
+            tf.initialize_all_variables().run(feed_dict={train_all_data_place: train_data})
 
             # Build the summary operation based on the TF collection of Summaries.
             summary_op = tf.merge_all_summaries()
@@ -343,12 +344,12 @@ def main(args=None):  # pylint: disable=unused-argument
             print("Running prediction on training set")
             prediction_dir = "predictions_training/"
             index_start = TRAIN_START
-            images = extract_test_data(TRAIN_PREFIX, index_start, TRAIN_SIZE, True)
+            images = extract_test_data(TRAIN_FORMAT, index_start, TRAIN_SIZE)
         else:
             print('Running prediction on test dataset')
             prediction_dir = 'predictions_test/'
             index_start = TEST_START
-            images = extract_test_data(TEST_PREFIX, index_start, TEST_SIZE, False)
+            images = extract_test_data(TEST_FORMAT, index_start, TEST_SIZE)
         
         if not os.path.isdir(prediction_dir):
             os.mkdir(prediction_dir)
