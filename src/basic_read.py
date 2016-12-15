@@ -3,17 +3,22 @@ import matplotlib.image as mpimg
 import numpy as np
 
 from matplotlib.colors import rgb_to_hsv
+from PIL import Image, ImageOps
 
 from config import *
 
 # Extract patches from a given image
-def img_crop(im, w, h):
-    list_patches = []
+def img_crop(im, w, h, w_step, h_step, padding):
     imgwidth = im.shape[0]
     imgheight = im.shape[1]
+    # add padding
+    if padding:
+        im = ImageOps.expand(Image.fromarray(im, 'HSV'), padding)
+        im = np.array(im, dtype='float32')
+    list_patches = []
     is_2d = len(im.shape) < 3
-    for i in range(0,imgheight,h):
-        for j in range(0,imgwidth,w):
+    for i in range(0,imgheight,h_step):
+        for j in range(0,imgwidth,w_step):
             if is_2d:
                 im_patch = im[j:j+w, i:i+h]
             else:
@@ -22,8 +27,8 @@ def img_crop(im, w, h):
     return list_patches
 
 
-def img_to_patches(img):
-    list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE)
+def img_to_patches(img, padding):
+    list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE, STEP, STEP, padding)
     return list_patches
 
 def read_images(file_prefix, start_images, num_images, is_train):
@@ -32,7 +37,7 @@ def read_images(file_prefix, start_images, num_images, is_train):
     for i in range(start_images, start_images + num_images):
         filename = filename_format.format(file_prefix, i)
         if os.path.isfile(filename):
-            print('Loading {}'.format(filename))
+            #print('Loading {}'.format(filename))
             img = mpimg.imread(filename)
             if 'groundtruth' not in file_prefix:
                 img = rgb_to_hsv(img)
@@ -47,8 +52,7 @@ def extract_patches(file_prefix, start_images, num_images, is_train):
     Values are rescaled from [0, 255] down to [-0.5, 0.5].
     """
     imgs = read_images(file_prefix, start_images, num_images, is_train)
-
-    img_patches = [img_to_patches(img) for img in imgs]
+    img_patches = [img_to_patches(img, 6) for img in imgs]
     data = [patch for patches in img_patches for patch in patches]
 
     return np.asarray(data)
@@ -59,7 +63,7 @@ def extract_labels(file_prefix, start_images, num_images, is_train):
     """Extract the labels into a 1-hot matrix [image index, label index]."""
     gt_imgs = read_images(file_prefix, start_images, num_images, is_train)
 
-    gt_patches = [img_crop(gt_img, IMG_PATCH_SIZE, IMG_PATCH_SIZE) for gt_img in gt_imgs]
+    gt_patches = [img_to_patches(gt_img, False) for gt_img in gt_imgs]
     data = np.asarray([gt_patch for patches in gt_patches for gt_patch in patches])
     labels = np.asarray([value_to_class(np.mean(d)) for d in data])
 

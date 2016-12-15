@@ -182,6 +182,7 @@ def main(args=None):  # pylint: disable=unused-argument
             c1 += 1
     print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
 
+    print('Constructing variables')
 
     # This is where training samples and labels are fed to the graph.
     # These placeholder nodes will be fed a batch of training data at each
@@ -193,6 +194,10 @@ def main(args=None):  # pylint: disable=unused-argument
             tf.float32,
             shape=(BATCH_SIZE, NUM_LABELS))
     train_all_data_node = tf.constant(train_data)
+    #all_train_data_place = tf.placeholder(
+    #        tf.float32,
+    #        shape=train_data.shape)
+    #all_train_data = train_data.assign(all_train_data_place)
 
     # The variables below hold all the trainable weights. They are passed an
     # initial value which will be assigned when when we call:
@@ -225,6 +230,7 @@ def main(args=None):  # pylint: disable=unused-argument
 
     all_params = dict(zip(all_params_names, all_params_node))
 
+    print('Training')
     # Training computation: logits + cross-entropy loss.
     logits = model(train_data_node, True, **all_params) # BATCH_SIZE*NUM_LABELS
     # print 'logits = ' + str(logits.get_shape()) + ' train_labels_node = ' + str(train_labels_node.get_shape())
@@ -271,7 +277,12 @@ def main(args=None):  # pylint: disable=unused-argument
     saver = tf.train.Saver()
 
     # Create a local session to run this computation.
-    with tf.Session() as s:
+    with tf.Session(
+            config=tf.ConfigProto(
+                intra_op_parallelism_threads=6,
+                inter_op_parallelism_threads=6,
+                use_per_session_threads=True)
+            ) as s:
 
         if RESTORE_MODEL:
             # Restore variables from disk.
