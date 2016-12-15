@@ -162,26 +162,27 @@ def main(args=None):  # pylint: disable=unused-argument
             c1 += 1
     print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
 
-    print ('Balancing training data...')
-    min_c = min(c0, c1)
-    idx0 = [i for i, j in enumerate(train_labels) if j[0] == 1]
-    idx1 = [i for i, j in enumerate(train_labels) if j[1] == 1]
-    new_indices = idx0[0:min_c] + idx1[0:min_c]
-    print (len(new_indices))
-    train_data = train_data[new_indices, :, :, :]
-    train_labels = train_labels[new_indices]
+    if BALANCE_DATA:
+        print ('Balancing training data...')
+        min_c = min(c0, c1)
+        idx0 = [i for i, j in enumerate(train_labels) if j[0] == 1]
+        idx1 = [i for i, j in enumerate(train_labels) if j[1] == 1]
+        new_indices = idx0[0:min_c] + idx1[0:min_c]
+        print (len(new_indices))
+        train_data = train_data[new_indices, :, :, :]
+        train_labels = train_labels[new_indices]
+
+
+        c0 = 0
+        c1 = 0
+        for i in range(len(train_labels)):
+            if train_labels[i][0] == 1:
+                c0 += 1
+            else:
+                c1 += 1
+        print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
 
     train_size = train_labels.shape[0]
-
-    c0 = 0
-    c1 = 0
-    for i in range(len(train_labels)):
-        if train_labels[i][0] == 1:
-            c0 += 1
-        else:
-            c1 += 1
-    print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
-
 
     # This is where training samples and labels are fed to the graph.
     # These placeholder nodes will be fed a batch of training data at each

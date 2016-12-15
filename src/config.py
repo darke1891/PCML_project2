@@ -6,7 +6,7 @@ TRAIN_SIZE = 100
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16 # 64
-NUM_EPOCHS = 10
+NUM_EPOCHS = 5
 RECORDING_STEP = 1000
 TRAIN_PREFIX = 'data/training/images/satImage_'
 TEST_PREFIX = 'data/test_set_images/test_'
@@ -22,3 +22,5 @@ RESTORE_MODEL = False # If True, restore existing model instead of training a ne
 IMG_PATCH_SIZE = 16
 
 IMAGE_ROTATE = False
+IMAGE_HSV_RANDOM = False
+BALANCE_DATA = False
