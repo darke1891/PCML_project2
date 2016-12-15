@@ -273,7 +273,12 @@ def main(args=None):  # pylint: disable=unused-argument
     saver = tf.train.Saver()
 
     # Create a local session to run this computation.
-    with tf.Session() as s:
+    with tf.Session(
+            config=tf.ConfigProto(
+                intra_op_parallelism_threads=10,
+                inter_op_parallelism_threads=10,
+                use_per_session_threads=True)
+            ) as s:
 
         if RESTORE_MODEL:
             # Restore variables from disk.
