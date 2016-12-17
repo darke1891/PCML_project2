@@ -16,12 +16,13 @@ def rotate_data(input_data, input_labels):
 
 
 def random_hsv_data(input_data, input_labels):
-    data = np.repeat(input_data, 4, axis=0)
-    labels = np.repeat(input_labels, 4, axis=0)
+    scale = 2
+    data = np.repeat(input_data, scale, axis=0)
+    labels = np.repeat(input_labels, scale, axis=0)
     for i in range(0, data.shape[0]):
-        if i % 4 != 0:
-            data[i, :, :, 1] *= random.uniform(0.8, 1.2)
-            data[i, :, :, 2] *= random.uniform(0.8, 1.2)
+        if i % scale != 0:
+            data[i, :, :, 1] *= random.uniform(0.7, 1.3)
+            data[i, :, :, 2] *= random.uniform(0.7, 1.3)
     return data, labels
 
 
