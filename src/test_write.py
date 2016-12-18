@@ -60,7 +60,7 @@ def label_to_img(imgwidth, imgheight, w, h, labels):
 def save_image(img, output_prediction, prediction_dir, index):
     # concatenate original image with prediction
     img_prediction = label_to_img(
-        img.shape[0], img.shape[1], IMG_PATCH_SIZE, IMG_PATCH_SIZE,
+        img.shape[0], img.shape[1], IMG_STRIDE_SIZE, IMG_STRIDE_SIZE,
         output_prediction)
 
     img = hsv_to_rgb(img)

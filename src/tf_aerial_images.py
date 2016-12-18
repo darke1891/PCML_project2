@@ -312,7 +312,7 @@ def train(s, saver, all_params):
     # save the last one
     save_path = saver.save(s, FLAGS.train_dir + "/model.ckpt")
     print("Model saved in file: %s" % save_path)
-
+    
     # do predictions on remaining training data
     remaining_train_size = 100 - TRAIN_SIZE
     if remaining_train_size != 0:
@@ -344,7 +344,7 @@ def test(s, all_params, data_format, index_start, size):
         prediction = s.run(output)
         output_predictions = np.concatenate((output_predictions, prediction))
 
-        save_image(img, prediction, prediction_dir, index + index_start)
+        save_image(img[PADDING:(img.shape[0]-PADDING),PADDING:(img.shape[1]-PADDING),:], prediction, prediction_dir, index + index_start)
 
     if is_cv:
         print('Cross validation error rate: {}'.format(

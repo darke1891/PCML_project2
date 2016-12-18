@@ -23,10 +23,10 @@ def img_crop(im, w, h, w_stride, h_stride):
 
 
 def img_to_patches(img, is_train = True):
-    if is_train:
-        list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_STRIDE_SIZE, IMG_STRIDE_SIZE)
-    else:
-        list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_PATCH_SIZE)
+    # if is_train:
+    list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_STRIDE_SIZE, IMG_STRIDE_SIZE)
+    #else:
+    #    list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_PATCH_SIZE)
     return list_patches
 
 def read_images(file_format, start_images, num_images):
@@ -38,6 +38,11 @@ def read_images(file_format, start_images, num_images):
             img = mpimg.imread(filename)
             if 'groundtruth' not in file_format:
                 img = rgb_to_hsv(img)
+            if PADDING != 0:
+                if 'groundtruth' not in file_format:
+                    img = np.lib.pad(img,((PADDING,PADDING),(PADDING,PADDING),(0,0)),'constant',constant_values = 0)
+                else :
+                    img = np.lib.pad(img,((PADDING,PADDING),(PADDING,PADDING)),'constant',constant_values = 0)
             imgs.append(img)
         else:
             print('File {} does not exist'.format(filename))
