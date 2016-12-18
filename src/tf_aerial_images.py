@@ -22,7 +22,7 @@ from test_read import extract_test_labels, extract_test_data
 from test_write import save_image
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-tmp',   # don't use default folder
+tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-baoge',   # don't use default folder
                            """Directory where to write event logs """
                            """and checkpoint.""")
 FLAGS = tf.app.flags.FLAGS
@@ -322,6 +322,8 @@ def train(s, saver, all_params):
 
         test(s, all_params, TRAIN_FORMAT, remaining_start, remaining_train_size)
 
+    print ("Prediction on train data")
+    test(s, all_params, TRAIN_FORMAT, TRAIN_START, TRAIN_SIZE)
 
 def test(s, all_params, data_format, index_start, size):
     images = extract_test_data(data_format, index_start, size)
@@ -329,7 +331,7 @@ def test(s, all_params, data_format, index_start, size):
     prediction_dir = "predictions_test/"
     if is_cv:
         prediction_dir = 'predictions_train/'
-        labels = extract_labels(data_format, index_start, size, False)
+        labels = extract_labels(TRAIN_LABEL_FORMAT, index_start, size, False)
     
     if not os.path.isdir(prediction_dir):
         os.mkdir(prediction_dir)

@@ -11,7 +11,7 @@ def rotate_data(input_data, input_labels):
     for i in range(0, n):
         for j in range(1, 4):
             index = i * 4 + j
-            data[index, :] = np.rot90(data[index, :])
+            data[index, :] = np.rot90(data[index, :], j)
     return data, labels
 
 

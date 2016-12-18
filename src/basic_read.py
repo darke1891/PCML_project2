@@ -34,7 +34,7 @@ def read_images(file_format, start_images, num_images):
     for i in range(start_images, start_images + num_images):
         filename = file_format.format(i)
         if os.path.isfile(filename):
-            print('Loading {}'.format(filename))
+            # print('Loading {}'.format(filename))
             img = mpimg.imread(filename)
             if 'groundtruth' not in file_format:
                 img = rgb_to_hsv(img)
