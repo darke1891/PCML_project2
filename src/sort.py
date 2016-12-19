@@ -22,7 +22,7 @@ from test_read import extract_test_labels, extract_test_data
 from test_write import save_image
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-jbao',   # don't use default folder
+tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-baoge',   # don't use default folder
                            """Directory where to write event logs """
                            """and checkpoint.""")
 FLAGS = tf.app.flags.FLAGS
@@ -139,15 +139,15 @@ def model(data, train, kwargs):
     reshape = tf.reshape(
         pool2,
         [pool_shape[0], pool_shape[1] * pool_shape[2] * pool_shape[3]])
-    # if train:
-    #     reshape = tf.nn.dropout(reshape, 0.5, seed=SEED)
+    if train and DROPOUT:
+        reshape = tf.nn.dropout(reshape, 0.5, seed=SEED)
     # Fully connected layer. Note that the '+' operation automatically
     # broadcasts the biases.
     hidden = tf.nn.relu(tf.matmul(reshape, kwargs['fc1_weights']) + kwargs['fc1_biases'])
     # Add a 50% dropout during training only. Dropout also scales
     # activations such that no rescaling is needed at evaluation time.
-    # if train:
-    #     hidden = tf.nn.dropout(hidden, 0.5, seed=SEED)
+    if train and DROPOUT:
+        hidden = tf.nn.dropout(hidden, 0.5, seed=SEED)
     out = tf.matmul(hidden, kwargs['fc2_weights']) + kwargs['fc2_biases']
 
     if train:
@@ -187,6 +187,8 @@ def train(s, saver, all_params, outf=None):
         min_c = min(c0, c1)
         idx0 = [i for i, j in enumerate(train_labels) if j[0] == 1]
         idx1 = [i for i, j in enumerate(train_labels) if j[1] == 1]
+        np.random.shuffle(idx0)
+        np.random.shuffle(idx1)
         new_indices = idx0[0:min_c] + idx1[0:min_c]
         print (len(new_indices))
         train_data = train_data[new_indices, :, :, :]
@@ -233,14 +235,15 @@ def train(s, saver, all_params, outf=None):
         all_grad_norms_node.append(norm_grad_i)
         tf.summary.scalar(all_params_names[i], norm_grad_i)
     
-    # L2 regularization for the fully connected parameters.
-    regularizers = (
-            tf.nn.l2_loss(all_params['fc1_weights']) +
-            tf.nn.l2_loss(all_params['fc1_biases']) +
-            tf.nn.l2_loss(all_params['fc2_weights']) + 
-            tf.nn.l2_loss(all_params['fc2_biases']))
-    # Add the regularization term to the loss.
-    loss += 5e-4 * regularizers
+    if not DROPOUT:
+        # L2 regularization for the fully connected parameters.
+        regularizers = (
+                tf.nn.l2_loss(all_params['fc1_weights']) +
+                tf.nn.l2_loss(all_params['fc1_biases']) +
+                tf.nn.l2_loss(all_params['fc2_weights']) + 
+                tf.nn.l2_loss(all_params['fc2_biases']))
+        # Add the regularization term to the loss.
+        loss += 5e-4 * regularizers
 
     # Optimizer: set up a variable that's incremented once per batch and
     # controls the learning rate decay.
@@ -357,11 +360,10 @@ def train(s, saver, all_params, outf=None):
         # do predictions on remaining training data
         remaining_train_size = 100 - TRAIN_SIZE
         if remaining_train_size != 0:
-            remaining_start = TRAIN_SIZE + 1
+            remaining_start = 1
             print(('Cross validation on train data.\n'
                 'Remaining {} train images will be used for testing')
                 .format(remaining_train_size))
-
             if outf is not None:
                 outf.write("Validation Set: ")
             test(s, all_params, TRAIN_FORMAT, remaining_start, remaining_train_size, outf)
@@ -384,13 +386,15 @@ def test(s, all_params, data_format, index_start, size, outf=None):
         os.mkdir(prediction_dir)
 
     output_predictions = np.zeros((0, NUM_LABELS))
+    
+    data_place = tf.placeholder(tf.float32, shape=images[0][1].shape)
+    data_node = tf.Variable(data_place)
+    
     for index, image_data in enumerate(images):
         img = image_data[0]
         img_patches = image_data[1]
         # predicting
         #data_node = tf.constant(img_patches)
-        data_place = tf.placeholder(tf.float32, shape=img_patches.shape)
-        data_node = tf.Variable(data_place)
         tf.variables_initializer([data_node]).run(feed_dict={data_place: img_patches})
 
         output = tf.nn.softmax(model(data_node, False, all_params))
