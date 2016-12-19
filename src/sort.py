@@ -22,7 +22,7 @@ from test_read import extract_test_labels, extract_test_data
 from test_write import save_image
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-baoge',   # don't use default folder
+tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-jbao',   # don't use default folder
                            """Directory where to write event logs """
                            """and checkpoint.""")
 FLAGS = tf.app.flags.FLAGS
@@ -40,8 +40,6 @@ def get_outf_name():
         else:
             break
     return out_file_name
-
-
 
 
 def error_rate(predictions, labels):
@@ -70,30 +68,30 @@ def print_predictions(predictions, labels):
     print (str(max_labels) + ' ' + str(max_predictions))
 
 
-# Make an image summary for 4d tensor image with index idx
-def get_image_summary(img, idx = 0):
-    V = tf.slice(img, (0, 0, 0, idx), (1, -1, -1, 1))
-    img_w = img.get_shape().as_list()[1]
-    img_h = img.get_shape().as_list()[2]
-    min_value = tf.reduce_min(V)
-    V = V - min_value
-    max_value = tf.reduce_max(V)
-    V = V / (max_value*PIXEL_DEPTH)
-    V = tf.reshape(V, (img_w, img_h, 1))
-    V = tf.transpose(V, (2, 0, 1))
-    V = tf.reshape(V, (-1, img_w, img_h, 1))
-    return V
-
-
-# Make an image summary for 3d tensor image with index idx
-def get_image_summary_3d(img):
-    V = tf.slice(img, (0, 0, 0), (1, -1, -1))
-    img_w = img.get_shape().as_list()[1]
-    img_h = img.get_shape().as_list()[2]
-    V = tf.reshape(V, (img_w, img_h, 1))
-    V = tf.transpose(V, (2, 0, 1))
-    V = tf.reshape(V, (-1, img_w, img_h, 1))
-    return V
+## Make an image summary for 4d tensor image with index idx
+#def get_image_summary(img, idx = 0):
+#    V = tf.slice(img, (0, 0, 0, idx), (1, -1, -1, 1))
+#    img_w = img.get_shape().as_list()[1]
+#    img_h = img.get_shape().as_list()[2]
+#    min_value = tf.reduce_min(V)
+#    V = V - min_value
+#    max_value = tf.reduce_max(V)
+#    V = V / (max_value*PIXEL_DEPTH)
+#    V = tf.reshape(V, (img_w, img_h, 1))
+#    V = tf.transpose(V, (2, 0, 1))
+#    V = tf.reshape(V, (-1, img_w, img_h, 1))
+#    return V
+#
+#
+## Make an image summary for 3d tensor image with index idx
+#def get_image_summary_3d(img):
+#    V = tf.slice(img, (0, 0, 0), (1, -1, -1))
+#    img_w = img.get_shape().as_list()[1]
+#    img_h = img.get_shape().as_list()[2]
+#    V = tf.reshape(V, (img_w, img_h, 1))
+#    V = tf.transpose(V, (2, 0, 1))
+#    V = tf.reshape(V, (-1, img_w, img_h, 1))
+#    return V
 
 
 # We will replicate the model structure for the training subgraph, as well
@@ -150,18 +148,18 @@ def model(data, train, kwargs):
         hidden = tf.nn.dropout(hidden, 0.5, seed=SEED)
     out = tf.matmul(hidden, kwargs['fc2_weights']) + kwargs['fc2_biases']
 
-    if train:
-        summary_id = '_0'
-        s_data = get_image_summary(data)
-        filter_summary0 = tf.summary.image('summary_data' + summary_id, s_data)
-        s_conv = get_image_summary(conv)
-        filter_summary2 = tf.summary.image('summary_conv' + summary_id, s_conv)
-        s_pool = get_image_summary(pool)
-        filter_summary3 = tf.summary.image('summary_pool' + summary_id, s_pool)
-        s_conv2 = get_image_summary(conv2)
-        filter_summary4 = tf.summary.image('summary_conv2' + summary_id, s_conv2)
-        s_pool2 = get_image_summary(pool2)
-        filter_summary5 = tf.summary.image('summary_pool2' + summary_id, s_pool2)
+    #if train:
+    #    summary_id = '_0'
+    #    s_data = get_image_summary(data)
+    #    filter_summary0 = tf.summary.image('summary_data' + summary_id, s_data)
+    #    s_conv = get_image_summary(conv)
+    #    filter_summary2 = tf.summary.image('summary_conv' + summary_id, s_conv)
+    #    s_pool = get_image_summary(pool)
+    #    filter_summary3 = tf.summary.image('summary_pool' + summary_id, s_pool)
+    #    s_conv2 = get_image_summary(conv2)
+    #    filter_summary4 = tf.summary.image('summary_conv2' + summary_id, s_conv2)
+    #    s_pool2 = get_image_summary(pool2)
+    #    filter_summary5 = tf.summary.image('summary_pool2' + summary_id, s_pool2)
 
     return out
 
@@ -224,16 +222,16 @@ def train(s, saver, all_params, outf=None):
     # print 'logits = ' + str(logits.get_shape()) + ' train_labels_node = ' + str(train_labels_node.get_shape())
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
         logits, train_labels_node))
-    tf.summary.scalar('loss', loss)
+    #tf.summary.scalar('loss', loss)
 
-    all_params_names = list(all_params.keys())
-    all_params_nodes = list(all_params.values())
-    all_grads_node = tf.gradients(loss, all_params_nodes)
-    all_grad_norms_node = []
-    for i in range(0, len(all_grads_node)):
-        norm_grad_i = tf.global_norm([all_grads_node[i]])
-        all_grad_norms_node.append(norm_grad_i)
-        tf.summary.scalar(all_params_names[i], norm_grad_i)
+    #all_params_names = list(all_params.keys())
+    #all_params_nodes = list(all_params.values())
+    #all_grads_node = tf.gradients(loss, all_params_nodes)
+    #all_grad_norms_node = []
+    #for i in range(0, len(all_grads_node)):
+    #    norm_grad_i = tf.global_norm([all_grads_node[i]])
+    #    all_grad_norms_node.append(norm_grad_i)
+    #    tf.summary.scalar(all_params_names[i], norm_grad_i)
     
     if not DROPOUT:
         # L2 regularization for the fully connected parameters.
@@ -256,7 +254,7 @@ def train(s, saver, all_params, outf=None):
         train_size,             # Decay step.
         0.95,                   # Decay rate.
         staircase=True)
-    tf.summary.scalar('learning_rate', learning_rate)
+    #tf.summary.scalar('learning_rate', learning_rate)
     
     # Use simple momentum for the optimization.
     if ADAM:
@@ -270,9 +268,9 @@ def train(s, saver, all_params, outf=None):
     train_all_prediction = tf.nn.softmax(model(train_all_data_node, False, all_params))
 
     # Build the summary operation based on the TF collection of Summaries.
-    summary_op = tf.merge_all_summaries()
-    summary_writer = tf.train.SummaryWriter(FLAGS.train_dir,
-                                            graph_def=s.graph_def)
+    #summary_op = tf.merge_all_summaries()
+    #summary_writer = tf.train.SummaryWriter(FLAGS.train_dir,
+    #                                        graph_def=s.graph_def)
     # If variables are not restored, 
     # run all the initializers to prepare the trainable parameters.
     if RESTORE_MODEL:
@@ -327,28 +325,28 @@ def train(s, saver, all_params, outf=None):
             feed_dict = {train_data_node: batch_data,
                          train_labels_node: batch_labels}
 
-            if step % RECORDING_STEP == 0:
+            #if step % RECORDING_STEP == 0:
 
-                summary_str, _, l, lr, predictions = s.run(
-                    [summary_op, optimizer, loss, learning_rate, train_prediction],
-                    feed_dict=feed_dict)
-                #summary_str = s.run(summary_op, feed_dict=feed_dict)
-                summary_writer.add_summary(summary_str, step)
-                summary_writer.flush()
+            #    summary_str, _, l, lr, predictions = s.run(
+            #        [summary_op, optimizer, loss, learning_rate, train_prediction],
+            #        feed_dict=feed_dict)
+            #    #summary_str = s.run(summary_op, feed_dict=feed_dict)
+            #    summary_writer.add_summary(summary_str, step)
+            #    summary_writer.flush()
 
-                # print_predictions(predictions, batch_labels)
+            #    # print_predictions(predictions, batch_labels)
 
-                print ('Epoch {:2f}, {}/{}' .format(float(step) * BATCH_SIZE / train_size, iepoch, num_epochs))
-                print ('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
-                print ('Minibatch error: %.1f%%' % error_rate(predictions,
-                                                             batch_labels))
+            #    print ('Epoch {:2f}, {}/{}' .format(float(step) * BATCH_SIZE / train_size, iepoch, num_epochs))
+            #    print ('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
+            #    print ('Minibatch error: %.1f%%' % error_rate(predictions,
+            #                                                 batch_labels))
 
-                sys.stdout.flush()
-            else:
+            #    sys.stdout.flush()
+            #else:
                 # Run the graph and fetch some of the nodes.
-                _, l, lr, predictions = s.run(
-                    [optimizer, loss, learning_rate, train_prediction],
-                    feed_dict=feed_dict)
+            _, l, lr, predictions = s.run(
+                [optimizer, loss, learning_rate, train_prediction],
+                feed_dict=feed_dict)
 
         # Save the variables to disk.
         # save the last one
@@ -412,6 +410,8 @@ def test(s, all_params, data_format, index_start, size, outf=None):
 
 
 def main(args=None):
+    if not os.path.isdir(FLAGS.train_dir):
+        os.mkdir(FLAGS.train_dir)
     out_name = get_outf_name()
     with open(out_name, 'w') as outf:
         # The variables below hold all the trainable weights. They are passed an
