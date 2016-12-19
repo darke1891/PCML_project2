@@ -22,7 +22,7 @@ from test_read import extract_test_labels, extract_test_data
 from test_write import save_image
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-baoge',   # don't use default folder
+tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-jbao',   # don't use default folder
                            """Directory where to write event logs """
                            """and checkpoint.""")
 FLAGS = tf.app.flags.FLAGS
@@ -203,7 +203,6 @@ def train(s, saver, all_params, outf=None):
         print ('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
 
     train_size = train_labels.shape[0]
-    print('Training size is {}'.format(train_size))
 
     # This is where training samples and labels are fed to the graph.
     # These placeholder nodes will be fed a batch of training data at each
@@ -215,6 +214,7 @@ def train(s, saver, all_params, outf=None):
             tf.float32,
             shape=(BATCH_SIZE, NUM_LABELS))
     train_all_data_place = tf.placeholder(tf.float32, shape=train_data.shape)
+    print('train_data shape {}'.format(train_data.shape))
     train_all_data_node = tf.Variable(train_all_data_place)
 
     # Training computation: logits + cross-entropy loss.
@@ -277,7 +277,7 @@ def train(s, saver, all_params, outf=None):
         uninit_vars = [var for var in all_vars if not tf.is_variable_initialized(var).eval()]
         print('The following are uninitialized variables. Start initing them ')
         print([var.name for var in uninit_vars])
-        tf.initialize_variables(uninit_vars).run(
+        tf.variables_initializer(uninit_vars).run(
                 feed_dict={train_all_data_place: train_data})
     else:
         tf.initialize_all_variables().run(feed_dict={train_all_data_place: train_data})
@@ -349,8 +349,8 @@ def train(s, saver, all_params, outf=None):
 
         # Save the variables to disk.
         # save the last one
-        save_path = saver.save(s, FLAGS.train_dir + "/model.ckpt")
-        print("Model saved in file: %s" % save_path)
+        save_path = saver.save(s, "{}/model{}.ckpt".format(FLAGS.train_dir, iepoch), write_meta_graph=False)
+        print("Model saved in file: %s".format(save_path))
         
         if outf is not None:
             outf.write("Epoch {}\n".format(iepoch))
@@ -358,8 +358,9 @@ def train(s, saver, all_params, outf=None):
         remaining_train_size = 100 - TRAIN_SIZE
         if remaining_train_size != 0:
             remaining_start = TRAIN_SIZE + 1
-            print("""Cross validation on train data.\nRemaining {} train images will 
-                    be used for testing""".format(remaining_train_size))
+            print(('Cross validation on train data.\n'
+                'Remaining {} train images will be used for testing')
+                .format(remaining_train_size))
 
             if outf is not None:
                 outf.write("Validation Set: ")
@@ -369,6 +370,7 @@ def train(s, saver, all_params, outf=None):
         if outf is not None:
             outf.write("Train Set: ")
         test(s, all_params, TRAIN_FORMAT, TRAIN_START, TRAIN_SIZE, outf)
+        print('-'*30)
 
 def test(s, all_params, data_format, index_start, size, outf=None):
     images = extract_test_data(data_format, index_start, size)
@@ -386,7 +388,11 @@ def test(s, all_params, data_format, index_start, size, outf=None):
         img = image_data[0]
         img_patches = image_data[1]
         # predicting
-        data_node = tf.constant(img_patches)
+        #data_node = tf.constant(img_patches)
+        data_place = tf.placeholder(tf.float32, shape=img_patches.shape)
+        data_node = tf.Variable(data_place)
+        tf.variables_initializer([data_node]).run(feed_dict={data_place: img_patches})
+
         output = tf.nn.softmax(model(data_node, False, all_params))
         prediction = s.run(output)
         output_predictions = np.concatenate((output_predictions, prediction))
@@ -439,7 +445,7 @@ def main(args=None):
                             'fc2_weights', 'fc2_biases']
         all_params = dict(zip(all_params_names, all_params_node))
 
-        saver = tf.train.Saver() 
+        saver = tf.train.Saver(max_to_keep=20) 
 
         with tf.Session(
                 config=tf.ConfigProto(
