@@ -13,8 +13,9 @@ import matplotlib.image as mpimg
 import numpy as np
 import tensorflow as tf
 
-from PIL import Image
+from datetime import datetime
 
+from PIL import Image
 from config import *
 from basic_read import read_images, extract_labels
 from train_read import extract_train
@@ -22,7 +23,7 @@ from test_read import extract_test_labels, extract_test_data
 from test_write import save_image
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-jbao',   # don't use default folder
+tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-wensi',   # don't use default folder
                            """Directory where to write event logs """
                            """and checkpoint.""")
 FLAGS = tf.app.flags.FLAGS
@@ -307,6 +308,7 @@ def train(s, saver, all_params, outf=None):
     training_indices = range(train_size)
 
     for iepoch in range(num_epochs):
+        print(datetime.now())
 
         # Permute training indices
         perm_indices = np.random.permutation(training_indices)
@@ -325,7 +327,7 @@ def train(s, saver, all_params, outf=None):
             feed_dict = {train_data_node: batch_data,
                          train_labels_node: batch_labels}
 
-            #if step % RECORDING_STEP == 0:
+            if step % RECORDING_STEP == 0:
 
             #    summary_str, _, l, lr, predictions = s.run(
             #        [summary_op, optimizer, loss, learning_rate, train_prediction],
@@ -336,22 +338,23 @@ def train(s, saver, all_params, outf=None):
 
             #    # print_predictions(predictions, batch_labels)
 
-            #    print ('Epoch {:2f}, {}/{}' .format(float(step) * BATCH_SIZE / train_size, iepoch, num_epochs))
+               print ('Epoch {:2f}, {}/{}' .format(float(step) * BATCH_SIZE / train_size, iepoch, num_epochs))
             #    print ('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
             #    print ('Minibatch error: %.1f%%' % error_rate(predictions,
             #                                                 batch_labels))
 
             #    sys.stdout.flush()
-            #else:
+            else:
                 # Run the graph and fetch some of the nodes.
-            _, l, lr, predictions = s.run(
-                [optimizer, loss, learning_rate, train_prediction],
-                feed_dict=feed_dict)
+                _, l, lr, predictions = s.run(
+                    [optimizer, loss, learning_rate, train_prediction],
+                    feed_dict=feed_dict)
 
         # Save the variables to disk.
         # save the last one
         save_path = saver.save(s, "{}/model{}.ckpt".format(FLAGS.train_dir, iepoch), write_meta_graph=False)
         print("Model saved in file: %s".format(save_path))
+
         
         if outf is not None:
             outf.write("Epoch {}\n".format(iepoch))
