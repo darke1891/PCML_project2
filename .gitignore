@@ -3,6 +3,7 @@ data/
 
 predictions_training/
 predictions_test/
+validation/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

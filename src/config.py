@@ -5,7 +5,7 @@ TRAIN_START = 1
 TRAIN_SIZE = 80
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = None  # Set to None for random seed.
-BATCH_SIZE = 32 # 64
+BATCH_SIZE = 16 # 64
 NUM_EPOCHS = 5
 RECORDING_STEP = 1000
 TRAIN_FORMAT = 'data/training/images/satImage_{:03d}.png'
@@ -22,8 +22,12 @@ TEST = False # do predictions with test_set_images
 # image size should be an integer multiple of this number!
 IMG_PATCH_SIZE = 16
 IMG_STRIDE_SIZE = 16
-PADDING = (IMG_PATCH_SIZE - IMG_STRIDE_SIZE) / 2
+PADDING = int((IMG_PATCH_SIZE - IMG_STRIDE_SIZE) / 2)
 
 IMAGE_ROTATE = False
 IMAGE_HSV_RANDOM = False
 BALANCE_DATA = False
+ADAM = False
+ADAM_INITIAL_RATE = 0.001
+MOMENTUM_INITIAL_RATE = 0.01
+MOMENTUM_MOMENTUM = 0.0
