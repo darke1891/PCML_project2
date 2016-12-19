@@ -349,7 +349,7 @@ def train(s, saver, all_params, outf=None):
 
         # Save the variables to disk.
         # save the last one
-        save_path = saver.save(s, FLAGS.train_dir + "/model.ckpt")
+        save_path = saver.save(s, FLAGS.train_dir + "/model.ckpt", write_meta_graph=False)
         print("Model saved in file: %s" % save_path)
         
         if outf is not None:
