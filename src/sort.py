@@ -138,8 +138,8 @@ def model(data, train, kwargs):
     reshape = tf.reshape(
         pool2,
         [pool_shape[0], pool_shape[1] * pool_shape[2] * pool_shape[3]])
-    # if train and DROPOUT:
-    #     reshape = tf.nn.dropout(reshape, 0.5, seed=SEED)
+    if train and DROPOUT:
+        reshape = tf.nn.dropout(reshape, 0.5, seed=SEED)
     # Fully connected layer. Note that the '+' operation automatically
     # broadcasts the biases.
     hidden = tf.nn.relu(tf.matmul(reshape, kwargs['fc1_weights']) + kwargs['fc1_biases'])
@@ -412,64 +412,65 @@ def test(s, all_params, data_format, index_start, size, outf=None):
 def main(args=None):
     if not os.path.isdir(FLAGS.train_dir):
         os.mkdir(FLAGS.train_dir)
-    out_name = get_outf_name()
-    with open(out_name, 'w') as outf:
-        # The variables below hold all the trainable weights. They are passed an
-        # initial value which will be assigned when when we call:
-        # {tf.initialize_all_variables().run()}
-        conv1_weights = tf.Variable(
-            tf.truncated_normal([5, 5, NUM_CHANNELS, 32],  # 5x5 filter, depth 32.
-                                stddev=WEIGHT_STD,
-                                seed=SEED),
-            name='conv1_weights')
-        conv1_biases = tf.Variable(tf.zeros([32]), name='conv1_biases')
-        conv2_weights = tf.Variable(
-            tf.truncated_normal([5, 5, 32, 64],
-                                stddev=WEIGHT_STD,
-                                seed=SEED),
-            name='conv2_weights')
-        conv2_biases = tf.Variable(tf.constant(0.1, shape=[64]), name='conv2_biases')
-        fc1_weights = tf.Variable(  # fully connected, depth 1024.
-            tf.truncated_normal([int(IMG_PATCH_SIZE / 4 * IMG_PATCH_SIZE / 4 * 64), 1024],
-                                stddev=WEIGHT_STD,
-                                seed=SEED),
-            name='fc1_weights')
-        fc1_biases = tf.Variable(tf.constant(0.1, shape=[1024]), name='fc1_biases')
-        fc2_weights = tf.Variable(
-            tf.truncated_normal([1024, NUM_LABELS],
-                                stddev=WEIGHT_STD,
-                                seed=SEED),
-            name='fc2_weigths')
-        fc2_biases = tf.Variable(tf.constant(0.1, shape=[NUM_LABELS]), name='fc2_biases')
+        
+    # The variables below hold all the trainable weights. They are passed an
+    # initial value which will be assigned when when we call:
+    # {tf.initialize_all_variables().run()}
+    conv1_weights = tf.Variable(
+        tf.truncated_normal([5, 5, NUM_CHANNELS, 32],  # 5x5 filter, depth 32.
+                            stddev=WEIGHT_STD,
+                            seed=SEED),
+        name='conv1_weights')
+    conv1_biases = tf.Variable(tf.zeros([32]), name='conv1_biases')
+    conv2_weights = tf.Variable(
+        tf.truncated_normal([5, 5, 32, 64],
+                            stddev=WEIGHT_STD,
+                            seed=SEED),
+        name='conv2_weights')
+    conv2_biases = tf.Variable(tf.constant(0.1, shape=[64]), name='conv2_biases')
+    fc1_weights = tf.Variable(  # fully connected, depth 1024.
+        tf.truncated_normal([int(IMG_PATCH_SIZE / 4 * IMG_PATCH_SIZE / 4 * 64), 1024],
+                            stddev=WEIGHT_STD,
+                            seed=SEED),
+        name='fc1_weights')
+    fc1_biases = tf.Variable(tf.constant(0.1, shape=[1024]), name='fc1_biases')
+    fc2_weights = tf.Variable(
+        tf.truncated_normal([1024, NUM_LABELS],
+                            stddev=WEIGHT_STD,
+                            seed=SEED),
+        name='fc2_weigths')
+    fc2_biases = tf.Variable(tf.constant(0.1, shape=[NUM_LABELS]), name='fc2_biases')
 
 
-        all_params_node = [conv1_weights, conv1_biases, conv2_weights, conv2_biases, fc1_weights, fc1_biases, fc2_weights,
-                           fc2_biases]
-        all_params_names = ['conv1_weights', 'conv1_biases', 'conv2_weights', 'conv2_biases', 'fc1_weights', 'fc1_biases',
-                            'fc2_weights', 'fc2_biases']
-        all_params = dict(zip(all_params_names, all_params_node))
+    all_params_node = [conv1_weights, conv1_biases, conv2_weights, conv2_biases, fc1_weights, fc1_biases, fc2_weights,
+                       fc2_biases]
+    all_params_names = ['conv1_weights', 'conv1_biases', 'conv2_weights', 'conv2_biases', 'fc1_weights', 'fc1_biases',
+                        'fc2_weights', 'fc2_biases']
+    all_params = dict(zip(all_params_names, all_params_node))
 
-        saver = tf.train.Saver(max_to_keep=20) 
+    saver = tf.train.Saver(max_to_keep=20) 
 
-        with tf.Session(
-                config=tf.ConfigProto(
-                    intra_op_parallelism_threads=NUM_THREADS,
-                    inter_op_parallelism_threads=NUM_THREADS,
-                    use_per_session_threads=True)
-                ) as s:
-            # read saved model
-            if RESTORE_MODEL:
-                saver.restore(s, FLAGS.train_dir + "/model.ckpt")
-                print('Model Restored! The following variables are stored: ')
-                print_tensors_in_checkpoint_file(FLAGS.train_dir + '/model.ckpt', False)
-            # train the saved model or a new model
-            # including cross validation on 100-TRAIN_SIZE images
-            if TRAIN_MODEL:
+    with tf.Session(
+            config=tf.ConfigProto(
+                intra_op_parallelism_threads=NUM_THREADS,
+                inter_op_parallelism_threads=NUM_THREADS,
+                use_per_session_threads=True)
+            ) as s:
+        # read saved model
+        if RESTORE_MODEL:
+            saver.restore(s, FLAGS.train_dir + "/model.ckpt")
+            print('Model Restored! The following variables are stored: ')
+            print_tensors_in_checkpoint_file(FLAGS.train_dir + '/model.ckpt', False)
+        # train the saved model or a new model
+        # including cross validation on 100-TRAIN_SIZE images
+        if TRAIN_MODEL:
+            out_name = get_outf_name()
+            with open(out_name, 'w') as outf:
                 train(s, saver, all_params, outf)
 
-            # predicting on test data
-            if TEST:
-                test(s, all_params, TEST_FORMAT, TEST_START, TEST_SIZE, outf)
+        # predicting on test data
+        if TEST:
+            test(s, all_params, TEST_FORMAT, TEST_START, TEST_SIZE)
 
 
 if __name__ == '__main__':
