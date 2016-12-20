@@ -23,7 +23,7 @@ from test_read import extract_test_labels, extract_test_data
 from test_write import save_image
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/mnist-wensi',   # don't use default folder
+tf.app.flags.DEFINE_string('train_dir', MODEL_DIR,   # don't use default folder
                            """Directory where to write event logs """
                            """and checkpoint.""")
 FLAGS = tf.app.flags.FLAGS
@@ -138,8 +138,8 @@ def model(data, train, kwargs):
     reshape = tf.reshape(
         pool2,
         [pool_shape[0], pool_shape[1] * pool_shape[2] * pool_shape[3]])
-    if train and DROPOUT:
-        reshape = tf.nn.dropout(reshape, 0.5, seed=SEED)
+    # if train and DROPOUT:
+    #     reshape = tf.nn.dropout(reshape, 0.5, seed=SEED)
     # Fully connected layer. Note that the '+' operation automatically
     # broadcasts the biases.
     hidden = tf.nn.relu(tf.matmul(reshape, kwargs['fc1_weights']) + kwargs['fc1_biases'])
@@ -248,19 +248,27 @@ def train(s, saver, all_params, outf=None):
     # controls the learning rate decay.
     batch = tf.Variable(0)
 
-    # Decay once per epoch, using an exponential schedule starting at 0.01.
-    learning_rate = tf.train.exponential_decay(
-        MOMENTUM_INITIAL_RATE,  # Base learning rate.
-        batch * BATCH_SIZE,     # Current index into the dataset.
-        train_size,             # Decay step.
-        0.95,                   # Decay rate.
-        staircase=True)
-    #tf.summary.scalar('learning_rate', learning_rate)
     
     # Use simple momentum for the optimization.
     if ADAM:
-        optimizer = tf.train.AdamOptimizer(ADAM_INITIAL_RATE).minimize(loss, global_step=batch)
+        # Decay once per epoch, using an exponential schedule starting at 0.01.
+        learning_rate = tf.train.exponential_decay(
+            ADAM_INITIAL_RATE,  # Base learning rate.
+            batch * BATCH_SIZE,     # Current index into the dataset.
+            train_size,             # Decay step.
+            0.95,                   # Decay rate.
+            staircase=True)
+        #tf.summary.scalar('learning_rate', learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=batch)
     else:
+        # Decay once per epoch, using an exponential schedule starting at 0.01.
+        learning_rate = tf.train.exponential_decay(
+            MOMENTUM_INITIAL_RATE,  # Base learning rate.
+            batch * BATCH_SIZE,     # Current index into the dataset.
+            train_size,             # Decay step.
+            0.95,                   # Decay rate.
+            staircase=True)
+        #tf.summary.scalar('learning_rate', learning_rate)
         optimizer = tf.train.MomentumOptimizer(learning_rate, MOMENTUM_MOMENTUM).minimize(loss, global_step=batch)
 
     # Predictions for the minibatch, validation set and test set.
@@ -289,22 +297,8 @@ def train(s, saver, all_params, outf=None):
     print ('Total number of iterations = ' + str(int(num_epochs * train_size / BATCH_SIZE)))
 
     if outf is not None:
-        outf.write("TRAIN_SIZE = {}\n".format(TRAIN_SIZE))
-        outf.write("NUM_EPOCHS = {}\n".format(NUM_EPOCHS))
-        outf.write("BATCH_SIZE = {}\n".format(BATCH_SIZE))
-        outf.write("IMG_PATCH_SIZE = {}\n".format(IMG_PATCH_SIZE))
-        outf.write("IMG_STRIDE_SIZE = {}\n".format(IMG_STRIDE_SIZE))
-        outf.write("IMAGE_ROTATE = {}\n".format(IMAGE_ROTATE))
-        outf.write("IMAGE_HSV_RANDOM = {}\n".format(IMAGE_HSV_RANDOM))
-        outf.write("BALANCE_DATA = {}\n".format(BALANCE_DATA))
-        outf.write("ADAM = {}\n".format(ADAM))
-        if ADAM:
-            outf.write("ADAM_INITIAL_RATE = {}\n".format(ADAM_INITIAL_RATE))
-        else:
-            outf.write("MOMENTUM_INITIAL_RATE = {}\n".format(MOMENTUM_INITIAL_RATE))
-            outf.write("MOMENTUM_MOMENTUM = {}\n".format(MOMENTUM_MOMENTUM))
-        outf.write("\n")
-
+        print_config(outf)
+    
     training_indices = range(train_size)
 
     for iepoch in range(num_epochs):
@@ -337,31 +331,30 @@ def train(s, saver, all_params, outf=None):
             #    summary_writer.flush()
 
             #    # print_predictions(predictions, batch_labels)
-
-               print ('Epoch {:2f}, {}/{}' .format(float(step) * BATCH_SIZE / train_size, iepoch, num_epochs))
+                print ('Epoch {:2f}, {}/{}'.format(float(step) * BATCH_SIZE / train_size, iepoch, num_epochs), end='\r')
             #    print ('Minibatch loss: %.3f, learning rate: %.6f' % (l, lr))
             #    print ('Minibatch error: %.1f%%' % error_rate(predictions,
             #                                                 batch_labels))
 
             #    sys.stdout.flush()
-            else:
+            # else:
                 # Run the graph and fetch some of the nodes.
-                _, l, lr, predictions = s.run(
-                    [optimizer, loss, learning_rate, train_prediction],
-                    feed_dict=feed_dict)
+            _, l, lr, predictions = s.run(
+                [optimizer, loss, learning_rate, train_prediction],
+                feed_dict=feed_dict)
+        print('')
 
         # Save the variables to disk.
         # save the last one
         save_path = saver.save(s, "{}/model{}.ckpt".format(FLAGS.train_dir, iepoch), write_meta_graph=False)
-        print("Model saved in file: %s".format(save_path))
-
+        print("Model saved in file: {}".format(save_path))
         
         if outf is not None:
             outf.write("Epoch {}\n".format(iepoch))
         # do predictions on remaining training data
         remaining_train_size = 100 - TRAIN_SIZE
         if remaining_train_size != 0:
-            remaining_start = 1
+            remaining_start = TRAIN_SIZE + 1
             print(('Cross validation on train data.\n'
                 'Remaining {} train images will be used for testing')
                 .format(remaining_train_size))
@@ -374,6 +367,10 @@ def train(s, saver, all_params, outf=None):
             outf.write("Train Set: ")
         test(s, all_params, TRAIN_FORMAT, TRAIN_START, TRAIN_SIZE, outf)
         print('-'*30)
+
+        if IMAGE_ROTATE:
+            for index in range(0, train_data.shape[0]):
+                train_data[index, :] = np.rot90(train_data[index, :])
 
 def test(s, all_params, data_format, index_start, size, outf=None):
     images = extract_test_data(data_format, index_start, size)
@@ -422,25 +419,25 @@ def main(args=None):
         # {tf.initialize_all_variables().run()}
         conv1_weights = tf.Variable(
             tf.truncated_normal([5, 5, NUM_CHANNELS, 32],  # 5x5 filter, depth 32.
-                                stddev=0.1,
+                                stddev=WEIGHT_STD,
                                 seed=SEED),
             name='conv1_weights')
         conv1_biases = tf.Variable(tf.zeros([32]), name='conv1_biases')
         conv2_weights = tf.Variable(
             tf.truncated_normal([5, 5, 32, 64],
-                                stddev=0.1,
+                                stddev=WEIGHT_STD,
                                 seed=SEED),
             name='conv2_weights')
         conv2_biases = tf.Variable(tf.constant(0.1, shape=[64]), name='conv2_biases')
         fc1_weights = tf.Variable(  # fully connected, depth 1024.
             tf.truncated_normal([int(IMG_PATCH_SIZE / 4 * IMG_PATCH_SIZE / 4 * 64), 1024],
-                                stddev=0.1,
+                                stddev=WEIGHT_STD,
                                 seed=SEED),
             name='fc1_weights')
         fc1_biases = tf.Variable(tf.constant(0.1, shape=[1024]), name='fc1_biases')
         fc2_weights = tf.Variable(
             tf.truncated_normal([1024, NUM_LABELS],
-                                stddev=0.1,
+                                stddev=WEIGHT_STD,
                                 seed=SEED),
             name='fc2_weigths')
         fc2_biases = tf.Variable(tf.constant(0.1, shape=[NUM_LABELS]), name='fc2_biases')
@@ -456,8 +453,8 @@ def main(args=None):
 
         with tf.Session(
                 config=tf.ConfigProto(
-                    intra_op_parallelism_threads=10,
-                    inter_op_parallelism_threads=10,
+                    intra_op_parallelism_threads=NUM_THREADS,
+                    inter_op_parallelism_threads=NUM_THREADS,
                     use_per_session_threads=True)
                 ) as s:
             # read saved model
