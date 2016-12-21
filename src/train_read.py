@@ -29,6 +29,4 @@ def random_hsv_data(input_data, input_labels):
 def extract_train():
     train_data = extract_patches(TRAIN_FORMAT, TRAIN_START, TRAIN_SIZE, True)
     train_labels = extract_labels(TRAIN_LABEL_FORMAT, TRAIN_START, TRAIN_SIZE, True)
-    if IMAGE_HSV_RANDOM:
-        train_data, train_labels = random_hsv_data(train_data, train_labels)
     return train_data, train_labels

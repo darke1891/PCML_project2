@@ -21,6 +21,8 @@ from basic_read import read_images, extract_labels
 from train_read import extract_train
 from test_read import extract_test_labels, extract_test_data
 from test_write import save_image
+from mask_to_submission import masks_to_submission
+
 from tensorflow.python.tools.inspect_checkpoint import print_tensors_in_checkpoint_file
 
 tf.app.flags.DEFINE_string('train_dir', MODEL_DIR,   # don't use default folder
@@ -304,6 +306,16 @@ def train(s, saver, all_params, outf=None):
     for iepoch in range(num_epochs):
         print(datetime.now())
 
+        if IMAGE_ROTATE:
+            rotate_list = np.random.randint(4, size=train_data.shape[0])
+            for index in range(0, train_data.shape[0]):
+                train_data[index, :] = np.rot90(train_data[index, :], rotate_list[index])
+        if IMAGE_HSV_RANDOM:
+            hsv_random = np.random.uniform(0.8, 1.2, (train_data.shape[0], 2))
+            for index in range(0, train_data.shape[0]):
+                train_data[index, :, :, 1] *= hsv_random[index, 0]
+                train_data[index, :, :, 2] *= hsv_random[index, 1]
+
         # Permute training indices
         perm_indices = np.random.permutation(training_indices)
 
@@ -370,10 +382,14 @@ def train(s, saver, all_params, outf=None):
 
         if IMAGE_ROTATE:
             for index in range(0, train_data.shape[0]):
-                train_data[index, :] = np.rot90(train_data[index, :])
+                train_data[index, :] = np.rot90(train_data[index, :], 4 - rotate_list[index])
+        if IMAGE_HSV_RANDOM:
+            for index in range(0, train_data.shape[0]):
+                train_data[index, :, :, 1] /= hsv_random[index, 0]
+                train_data[index, :, :, 2] /= hsv_random[index, 1]
 
 def test(s, all_params, data_format, index_start, size, outf=None):
-    images = extract_test_data(data_format, index_start, size)
+    images = extract_test_data(data_format, index_start, 1)
     is_cv = 'train' in data_format
     prediction_dir = "predictions_test/"
     if is_cv:
@@ -385,21 +401,40 @@ def test(s, all_params, data_format, index_start, size, outf=None):
 
     output_predictions = np.zeros((0, NUM_LABELS))
     
-    data_place = tf.placeholder(tf.float32, shape=images[0][1].shape)
+    if is_cv or TEST_SERVER:
+        data_place = tf.placeholder(tf.float32, shape=images[0][1].shape)
+    else:
+        data_place = tf.placeholder(tf.float32, shape=images[0][1][0:TEST_PATCH_SIZE, :].shape)
+
     data_node = tf.Variable(data_place)
-    
-    for index, image_data in enumerate(images):
+
+    for index in range(index_start, index_start + size):
+        if not is_cv:
+            print ("process picture " + str(index))
+        images = extract_test_data(data_format, index, 1)
+        image_data = images[0]
         img = image_data[0]
         img_patches = image_data[1]
         # predicting
         #data_node = tf.constant(img_patches)
-        tf.variables_initializer([data_node]).run(feed_dict={data_place: img_patches})
 
-        output = tf.nn.softmax(model(data_node, False, all_params))
-        prediction = s.run(output)
+        if is_cv or TEST_SERVER:
+            tf.variables_initializer([data_node]).run(feed_dict={data_place: img_patches})
+
+            output = tf.nn.softmax(model(data_node, False, all_params))
+            prediction = s.run(output)
+        else:
+            prediction = np.zeros((0, NUM_LABELS))
+            for start in range(0, img_patches.shape[0], TEST_PATCH_SIZE):
+                end = start + TEST_PATCH_SIZE
+                img_patches_patch = img_patches[start:end, :]
+                tf.variables_initializer([data_node]).run(feed_dict={data_place: img_patches_patch})
+                output = tf.nn.softmax(model(data_node, False, all_params))
+                prediction_patch = s.run(output)
+                prediction = np.concatenate((prediction, prediction_patch))
+        
         output_predictions = np.concatenate((output_predictions, prediction))
-
-        save_image(img[PADDING:(img.shape[0]-PADDING),PADDING:(img.shape[1]-PADDING),:], prediction, prediction_dir, index + index_start)
+        save_image(img[PADDING:(img.shape[0]-PADDING),PADDING:(img.shape[1]-PADDING),:], prediction, prediction_dir, index)
 
     if is_cv:
         error_rate_str = 'Error rate: {}'.format(
@@ -471,6 +506,12 @@ def main(args=None):
         # predicting on test data
         if TEST:
             test(s, all_params, TEST_FORMAT, TEST_START, TEST_SIZE)
+            submission_filename = 'submission.csv'
+            image_filenames = []
+            for i in range(1, 51):
+                image_filename = 'predictions_test/prediction_{}.png'.format(i)
+                image_filenames.append(image_filename)
+            masks_to_submission(submission_filename, *image_filenames)
 
 
 if __name__ == '__main__':

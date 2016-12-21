@@ -15,15 +15,17 @@ TEST_FORMAT = 'data/test_set_images/test_{}.png'
 TEST_START = 1
 TEST_SIZE = 50
 TRAIN_LABEL_FORMAT = 'data/training/groundtruth/satImage_{:03d}.png'
-TRAIN_MODEL = True # if it's training(including doing predictions on remaining train images) 
-RESTORE_MODEL = False # restore model from backup  
-TEST = False # do predictions with test_set_images
+TRAIN_MODEL = False # if it's training(including doing predictions on remaining train images) 
+RESTORE_MODEL = True # restore model from backup  
+TEST = True # do predictions with test_set_images
+TEST_SERVER = True
+TEST_PATCH_SIZE = 19 * 19 * 64
 
 # Set image patch size in pixels
 # IMG_PATCH_SIZE should be a multiple of 4
 # image size should be an integer multiple of this number!
 IMG_PATCH_SIZE = 16
-IMG_STRIDE_SIZE = 16
+IMG_STRIDE_SIZE = 2
 PADDING = int((IMG_PATCH_SIZE - IMG_STRIDE_SIZE) / 2)
 
 IMAGE_ROTATE = False
