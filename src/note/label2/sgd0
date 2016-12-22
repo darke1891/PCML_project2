@@ -1,0 +1,44 @@
+TRAIN_SIZE = 80
+NUM_EPOCHS = 10
+BATCH_SIZE = 16
+IMG_PATCH_SIZE = 16
+IMG_STRIDE_SIZE = 2
+IMAGE_ROTATE = False
+IMAGE_HSV_RANDOM = False
+BALANCE_DATA = False
+DROPOUT = False
+WEIGHT_STD = 0.01
+ADAM = False
+MOMENTUM_INITIAL_RATE = 0.01
+MOMENTUM_MOMENTUM = 0.0
+
+Epoch 0
+Validation Set: Error rate: 15.621499999999997
+Train Set: Error rate: 13.290750000000003
+Epoch 1
+Validation Set: Error rate: 14.618624999999994
+Train Set: Error rate: 10.872312500000007
+Epoch 2
+Validation Set: Error rate: 14.167500000000004
+Train Set: Error rate: 10.011312500000003
+Epoch 3
+Validation Set: Error rate: 14.353624999999994
+Train Set: Error rate: 8.651124999999993
+Epoch 4
+Validation Set: Error rate: 14.216375
+Train Set: Error rate: 8.249812500000004
+Epoch 5
+Validation Set: Error rate: 14.866249999999994
+Train Set: Error rate: 7.383437499999999
+Epoch 6
+Validation Set: Error rate: 15.076499999999996
+Train Set: Error rate: 7.596406250000001
+Epoch 7
+Validation Set: Error rate: 14.356375
+Train Set: Error rate: 6.6559687499999995
+Epoch 8
+Validation Set: Error rate: 14.196875000000006
+Train Set: Error rate: 6.388468750000001
+Epoch 9
+Validation Set: Error rate: 14.746499999999997
+Train Set: Error rate: 5.736906250000004

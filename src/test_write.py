@@ -1,3 +1,10 @@
+'''
+Read functions for testing
+After we do predictions on a data set,
+we use this to generate images and save them.
+This is almost the same as the file in examples
+'''
+
 import numpy as np
 
 from PIL import Image
@@ -20,10 +27,10 @@ def concatenate_images(img, gt_img):
         cimg = np.concatenate((img, gt_img), axis=1)
     else:
         gt_img_3c = np.zeros((w, h, 3), dtype=np.uint8)
-        gt_img8 = img_float_to_uint8(gt_img)          
-        gt_img_3c[:,:,0] = gt_img8
-        gt_img_3c[:,:,1] = gt_img8
-        gt_img_3c[:,:,2] = gt_img8
+        gt_img8 = img_float_to_uint8(gt_img)
+        gt_img_3c[:, :, 0] = gt_img8
+        gt_img_3c[:, :, 1] = gt_img8
+        gt_img_3c[:, :, 2] = gt_img8
         img8 = img_float_to_uint8(img)
         cimg = np.concatenate((img8, gt_img_3c), axis=1)
     return cimg
@@ -33,7 +40,7 @@ def make_img_overlay(img, predicted_img):
     w = img.shape[0]
     h = img.shape[1]
     color_mask = np.zeros((w, h, 3), dtype=np.uint8)
-    color_mask[:,:,0] = predicted_img*PIXEL_DEPTH
+    color_mask[:, :, 0] = predicted_img * PIXEL_DEPTH
 
     img8 = img_float_to_uint8(img)
     background = Image.fromarray(img8, 'RGB').convert("RGBA")
@@ -46,8 +53,8 @@ def make_img_overlay(img, predicted_img):
 def label_to_img(imgwidth, imgheight, w, h, labels):
     array_labels = np.zeros([imgwidth, imgheight])
     idx = 0
-    for i in range(0,imgheight,h):
-        for j in range(0,imgwidth,w):
+    for i in range(0, imgheight, h):
+        for j in range(0, imgwidth, w):
             if labels[idx][0] > 0.5:
                 l = 1
             else:
@@ -63,7 +70,8 @@ def save_image(img, output_prediction, prediction_dir, index):
         img.shape[0], img.shape[1], IMG_STRIDE_SIZE, IMG_STRIDE_SIZE,
         output_prediction)
 
-    img = hsv_to_rgb(img)
+    if CONVERT_HSV:
+        img = hsv_to_rgb(img)
     cimg = concatenate_images(img, img_prediction)
     Image.fromarray(cimg).save('{}prediction_{}.png'.format(
         prediction_dir, index

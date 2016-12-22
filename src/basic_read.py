@@ -1,3 +1,8 @@
+'''
+Basic functions for reading image.
+These functions are shared by 'test_read' and 'train_read'
+'''
+
 import os
 import matplotlib.image as mpimg
 import numpy as np
@@ -6,14 +11,15 @@ from matplotlib.colors import rgb_to_hsv
 
 from config import *
 
+
 # Extract patches from a given image
 def img_crop(im, w, h, w_stride, h_stride):
     list_patches = []
     imgwidth = im.shape[0]
     imgheight = im.shape[1]
     is_2d = len(im.shape) < 3
-    for i in range(0,imgheight - h + 1,h_stride):
-        for j in range(0,imgwidth - w + 1,w_stride):
+    for i in range(0, imgheight - h + 1, h_stride):
+        for j in range(0, imgwidth - w + 1, w_stride):
             if is_2d:
                 im_patch = im[j:j+w, i:i+h]
             else:
@@ -22,12 +28,14 @@ def img_crop(im, w, h, w_stride, h_stride):
     return list_patches
 
 
-def img_to_patches(img, is_train = True):
-    # if is_train:
-    list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_STRIDE_SIZE, IMG_STRIDE_SIZE)
-    #else:
-    #    list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_PATCH_SIZE, IMG_PATCH_SIZE)
+# cut images and get patches
+# now, we do the same cut for both train data and test data
+# so we don't need 'is_train' now actually
+def img_to_patches(img, is_train=True):
+    list_patches = img_crop(img, IMG_PATCH_SIZE, IMG_PATCH_SIZE,
+                            IMG_STRIDE_SIZE, IMG_STRIDE_SIZE)
     return list_patches
+
 
 def read_images(file_format, start_images, num_images):
     imgs = []
@@ -37,12 +45,18 @@ def read_images(file_format, start_images, num_images):
             # print('Loading {}'.format(filename))
             img = mpimg.imread(filename)
             if 'groundtruth' not in file_format:
-                img = rgb_to_hsv(img)
+                if CONVERT_HSV:
+                    img = rgb_to_hsv(img)
             if PADDING != 0:
                 if 'groundtruth' not in file_format:
-                    img = np.lib.pad(img,((PADDING,PADDING),(PADDING,PADDING),(0,0)),'constant',constant_values = 0)
-                else :
-                    img = np.lib.pad(img,((PADDING,PADDING),(PADDING,PADDING)),'constant',constant_values = 0)
+                    img = np.lib.pad(img,
+                                     ((PADDING, PADDING), (PADDING, PADDING),
+                                      (0, 0)),
+                                     'constant', constant_values=0)
+                else:
+                    img = np.lib.pad(img,
+                                     ((PADDING, PADDING), (PADDING, PADDING)),
+                                     'constant', constant_values=0)
             imgs.append(img)
         else:
             print('File {} does not exist'.format(filename))
@@ -67,7 +81,8 @@ def extract_labels(file_format, start_images, num_images, is_train):
     gt_imgs = read_images(file_format, start_images, num_images)
 
     gt_patches = [img_to_patches(gt_img, is_train) for gt_img in gt_imgs]
-    data = np.asarray([gt_patch for patches in gt_patches for gt_patch in patches])
+    data = np.asarray([gt_patch for patches in gt_patches
+                       for gt_patch in patches])
     labels = np.asarray([value_to_class(np.mean(d)) for d in data])
 
     # Convert to dense 1-hot representation.
@@ -76,11 +91,10 @@ def extract_labels(file_format, start_images, num_images, is_train):
 
 # Assign a label to a patch v
 def value_to_class(v):
-    foreground_threshold = 0.25 # percentage of pixels > 1 required to assign a foreground label to a patch
+    foreground_threshold = 0.25
+    # percentage of pixels > 1 required to assign a foreground label to a patch
     df = np.sum(v)
     if df > foreground_threshold:
         return [1, 0]
     else:
         return [0, 1]
-
-

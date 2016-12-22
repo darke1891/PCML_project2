@@ -1,11 +1,18 @@
+'''
+Read functions for testing
+When we do predictions on a data set, we use this file
+'''
+
 import numpy as np
 
 from config import *
 from basic_read import extract_labels, read_images, img_to_patches
 
-def extract_test_labels():
-    labels = extract_labels(TRAIN_LABEL_FORMAT, TRAIN_START, TRAIN_SIZE, False)
+
+def extract_test_labels(index_start, size):
+    labels = extract_labels(TRAIN_LABEL_FORMAT, index_start, size, False)
     return labels
+
 
 def extract_test_data(file_format, index0_images, num_images):
     images = read_images(file_format, index0_images, num_images)
