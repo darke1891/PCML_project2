@@ -1,7 +1,6 @@
 """
-Basec on baseline for machine learning project on road segmentation.
+Based on baseline model for machine learning project on road segmentation.
 
-Credits: Aurelien Lucchi, ETH Zürich
 """
 
 

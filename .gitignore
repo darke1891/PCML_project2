@@ -1,5 +1,6 @@
 # add data directory for our project
-data/
+test_set_images/
+training/
 
 predictions_training/
 predictions_test/
