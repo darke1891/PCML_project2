@@ -1,6 +1,12 @@
 """
-Based on baseline model for machine learning project on road segmentation.
+Our CNN model.
+There are two CNN layers and one fully connected layer.
+In our test, all parameters that need to be adjusted are put in 'config.py',
+so usually you don't need to modify this file, unless you want to modify
+struct of the network.
 
+This model is based on baseline model for machine learning
+project on road segmentation.
 """
 
 

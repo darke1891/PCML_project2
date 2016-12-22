@@ -13,7 +13,7 @@ However, as we generate many image patches, it needs a lot of memory to run the 
 ## Structure
 All scripts are put 'src'.
 
-`predict.py` is the TensorFlow model we use in this project. It's also the 'main' script.
+`run.py` is the TensorFlow model we use in this project. It's also the 'main' script.
 
 `config.py` contains all parameters that you may need to train a new model or do predictions.
 
@@ -32,14 +32,14 @@ We have set parameter for testing, so you can run the prediction directly.
 
 Please download test data from the competition and put them at folder 'src/data/', which means the first image is 'src/data/test_set_images/test_1.png'.
 
-Then, run 'python predict.py' in 'src'.
+Then, run 'python run.py' in 'src'.
 
 For example, if test data are put at folder 'X'. Then run this script in this folder.
 
 ~~~~
 cp -r X/test_set_images src/data/
 cd src
-python predict.py
+python run.py
 ~~~~
 
 Then you can find prediction images in 'src/predictions_test', and csv file in 'src'.

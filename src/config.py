@@ -7,8 +7,8 @@ So, sometimes we put comment under a line but not on the right of the line.
 '''
 
 
-NUM_THREADS = 32  # Max number of threads that TensorFlow can use.
-MODEL_DIR = 'final2'  # The folder contains model
+NUM_THREADS = 16  # Max number of threads that TensorFlow can use.
+MODEL_DIR = 'final'  # The folder contains model
 NUM_CHANNELS = 3  # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 2  # Road and background
